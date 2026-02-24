@@ -8,7 +8,7 @@ const SEED_GRANTS = [
     ticker: 'RAMP',
     totalShares: 400,
     vestedShares: 0,
-    grantPrice: 90,
+    grantPrice: 19.24,
     currentPrice: 90,
     grantDate: '2025-06-01',
     vestingMonths: null,
@@ -21,7 +21,7 @@ const SEED_GRANTS = [
     company: 'Ramp',
     ticker: 'RAMP',
     totalShares: 438,
-    vestedShares: 72, // Jan + Feb 2026 already vested (36 × 2)
+    vestedShares: 36, // Jan 2026 vested (36 × 1)
     grantPrice: 90,
     currentPrice: 90,
     grantDate: '2025-12-01',
@@ -29,7 +29,7 @@ const SEED_GRANTS = [
     cliffMonths: 0,
     vestingSchedule: [
       { date: '2026-01-01', shares: 36, vested: true },
-      { date: '2026-02-01', shares: 36, vested: true },
+      { date: '2026-02-01', shares: 36, vested: false },
       { date: '2026-03-01', shares: 36, vested: false },
       { date: '2026-04-01', shares: 36, vested: false },
       { date: '2026-05-01', shares: 36, vested: false },
@@ -48,9 +48,11 @@ const SEED_GRANTS = [
 export function useRSUs() {
   const [rsus, setRSUs] = useLocalStorage('wp_rsus', SEED_GRANTS);
 
-  // Seed if localStorage has empty array from a previous session
-  if (Array.isArray(rsus) && rsus.length === 0) {
+  // Re-seed if data is stale (checks seed version)
+  const [seedVersion, setSeedVersion] = useLocalStorage('wp_rsus_seed', 0);
+  if (seedVersion < 2) {
     setRSUs(SEED_GRANTS);
+    setSeedVersion(2);
   }
 
   const addGrant = (grant) => {

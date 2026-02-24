@@ -13,23 +13,33 @@ const DEDUCTION_COLORS = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6',
 export default function TaxCalcPage() {
   const { profile, updateProfile } = useProfile();
   const [baseSalary, setBaseSalary] = useState(profile.baseSalary || 0);
-  const [commission, setCommission] = useState(profile.commission || 0);
+  const [monthlyCommission, setMonthlyCommission] = useState(profile.monthlyCommission || 8000);
+  const [commissionTaxRate, setCommissionTaxRate] = useState(profile.commissionTaxRate || 40);
   const [contribution401k, setContribution401k] = useState(profile.contribution401kPct || 5);
   const [hsaContribution, setHsaContribution] = useState(profile.hsaAnnual || 0);
 
-  const grossIncome = baseSalary + commission;
+  const annualCommission = monthlyCommission * 12;
+  const grossIncome = baseSalary + annualCommission;
   const annual401k = Math.min((grossIncome * contribution401k) / 100, 24500);
   const rampMatch = useMemo(() => computeRampMatch(grossIncome, contribution401k), [grossIncome, contribution401k]);
 
   const result = useMemo(
-    () => computeNYCTakeHome({ baseSalary, commission, pre401k: annual401k, preHSA: hsaContribution }),
-    [baseSalary, commission, annual401k, hsaContribution]
+    () => computeNYCTakeHome({
+      baseSalary,
+      commission: annualCommission,
+      commissionWithholdingRate: commissionTaxRate / 100,
+      pre401k: annual401k,
+      preHSA: hsaContribution,
+    }),
+    [baseSalary, annualCommission, commissionTaxRate, annual401k, hsaContribution]
   );
 
   const handleSaveToProfile = () => {
     updateProfile({
       baseSalary,
-      commission,
+      commission: annualCommission,
+      monthlyCommission,
+      commissionTaxRate,
       annualSalary: grossIncome,
       takeHomePay: result?.annualTakeHome || 0,
       contribution401kPct: contribution401k,
@@ -54,10 +64,10 @@ export default function TaxCalcPage() {
       </div>
 
       {/* Inputs */}
-      <Card title="Your Compensation" subtitle="Enter your base salary and expected annual commission">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card title="Your Compensation" subtitle="Base salary + monthly commission (commissions taxed at supplemental rate)">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Input
-            label="Base Salary"
+            label="Base Salary (annual)"
             type="number"
             prefix="$"
             placeholder="85000"
@@ -65,12 +75,20 @@ export default function TaxCalcPage() {
             onChange={(e) => setBaseSalary(parseFloat(e.target.value) || 0)}
           />
           <Input
-            label="Annual Commission"
+            label="Avg Monthly Commission"
             type="number"
             prefix="$"
-            placeholder="40000"
-            value={commission || ''}
-            onChange={(e) => setCommission(parseFloat(e.target.value) || 0)}
+            placeholder="8000"
+            value={monthlyCommission || ''}
+            onChange={(e) => setMonthlyCommission(parseFloat(e.target.value) || 0)}
+          />
+          <Input
+            label="Commission Tax Rate"
+            type="number"
+            suffix="%"
+            placeholder="40"
+            value={commissionTaxRate || ''}
+            onChange={(e) => setCommissionTaxRate(parseFloat(e.target.value) || 0)}
           />
           <Input
             label="401k Contribution"
@@ -92,12 +110,44 @@ export default function TaxCalcPage() {
         <div className="mt-4 flex items-center gap-4">
           <div className="text-sm text-gray-400">
             Total Gross: <span className="font-semibold text-gray-100">{formatCurrency(grossIncome)}</span>
+            <span className="text-gray-500 ml-2">({formatCurrency(baseSalary)} base + {formatCurrency(annualCommission)} commission)</span>
           </div>
           <Button size="sm" onClick={handleSaveToProfile}>
             Save to Profile
           </Button>
         </div>
       </Card>
+
+      {/* Commission Reality Check */}
+      {result && annualCommission > 0 && (
+        <Card title="Commission Take-Home" subtitle={`${commissionTaxRate}% withheld on all commission income`}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div className="bg-gray-850 rounded-lg p-4">
+              <p className="text-xs text-gray-500">Monthly Commission (Gross)</p>
+              <p className="text-lg font-bold text-gray-100 mt-1">{formatCurrency(monthlyCommission)}</p>
+            </div>
+            <div className="bg-rose-500/5 border border-rose-500/20 rounded-lg p-4">
+              <p className="text-xs text-rose-500">Tax Withheld ({commissionTaxRate}%)</p>
+              <p className="text-lg font-bold text-rose-500 mt-1">-{formatCurrency(monthlyCommission * commissionTaxRate / 100)}</p>
+              <p className="text-xs text-rose-500/60 mt-1">{formatCurrency(result.commissionTaxWithheld)}/yr</p>
+            </div>
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4">
+              <p className="text-xs text-emerald-600">Commission Take-Home</p>
+              <p className="text-lg font-bold text-emerald-600 mt-1">{formatCurrency(result.commissionNetMonthly)}/mo</p>
+              <p className="text-xs text-emerald-600/60 mt-1">{formatCurrency(result.commissionNetAnnual)}/yr</p>
+            </div>
+            <div className="bg-gray-850 rounded-lg p-4">
+              <p className="text-xs text-gray-500">Base Take-Home (est.)</p>
+              <p className="text-lg font-bold text-gray-100 mt-1">{formatCurrency(result.baseNetMonthly)}/mo</p>
+              <p className="text-xs text-gray-500 mt-1">{formatCurrency(result.baseNetAnnual)}/yr</p>
+            </div>
+          </div>
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-sm text-amber-600">
+            Every <strong>{formatCurrency(monthlyCommission)}</strong> commission check → you take home <strong>{formatCurrency(monthlyCommission * (1 - commissionTaxRate / 100))}</strong> after {commissionTaxRate}% withholding.
+            {commissionTaxRate >= 35 && ' You may get some back as a refund if your effective rate is lower than the withholding rate.'}
+          </div>
+        </Card>
+      )}
 
       {/* Ramp 401k Match */}
       <Card title="Ramp 401k Match" subtitle="100% match on first 3% + 50% match on next 2%">
@@ -232,13 +282,13 @@ export default function TaxCalcPage() {
             </Card>
           </div>
 
-          {/* Commission Breakdown */}
+          {/* Compensation Split */}
           <Card title="Compensation Split" subtitle="How your base and commission are structured">
             <div className="flex items-center gap-4 mb-4">
               <div className="flex-1">
                 <div className="h-4 bg-gray-800 rounded-full overflow-hidden flex">
-                  <div className="h-full bg-blue-500 transition-all" style={{ width: `${(baseSalary / grossIncome) * 100}%` }} />
-                  <div className="h-full bg-amber-500 transition-all" style={{ width: `${(commission / grossIncome) * 100}%` }} />
+                  <div className="h-full bg-blue-500 transition-all" style={{ width: `${grossIncome > 0 ? (baseSalary / grossIncome) * 100 : 0}%` }} />
+                  <div className="h-full bg-amber-500 transition-all" style={{ width: `${grossIncome > 0 ? (annualCommission / grossIncome) * 100 : 0}%` }} />
                 </div>
               </div>
             </div>
@@ -254,10 +304,10 @@ export default function TaxCalcPage() {
               <div className="bg-gray-850 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                  <span className="text-xs text-gray-500">Commission</span>
+                  <span className="text-xs text-gray-500">Commission ({formatCurrency(monthlyCommission)}/mo × 12)</span>
                 </div>
-                <p className="text-lg font-bold text-gray-100">{formatCurrency(commission)}</p>
-                <p className="text-xs text-gray-500">{formatPercentRaw(grossIncome > 0 ? ((commission / grossIncome) * 100).toFixed(0) : 0)} of total</p>
+                <p className="text-lg font-bold text-gray-100">{formatCurrency(annualCommission)}</p>
+                <p className="text-xs text-gray-500">{formatPercentRaw(grossIncome > 0 ? ((annualCommission / grossIncome) * 100).toFixed(0) : 0)} of total · {commissionTaxRate}% taxed</p>
               </div>
             </div>
           </Card>

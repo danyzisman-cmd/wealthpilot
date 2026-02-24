@@ -47,14 +47,14 @@ function computeBracketTax(taxableIncome, brackets) {
   return tax;
 }
 
-export function computeNYCTakeHome({ baseSalary, commission, pre401k = 0, preHSA = 0 }) {
+export function computeNYCTakeHome({ baseSalary, commission, commissionWithholdingRate = 0.40, pre401k = 0, preHSA = 0 }) {
   const grossIncome = baseSalary + commission;
   if (grossIncome <= 0) return null;
 
   // Pre-tax deductions reduce federal and state taxable income
   const totalPreTax = pre401k + preHSA;
 
-  // Federal
+  // Federal (bracket-based on total income for true liability)
   const federalTaxable = Math.max(grossIncome - totalPreTax - FEDERAL_STANDARD_DEDUCTION, 0);
   const federalTax = computeBracketTax(federalTaxable, FEDERAL_BRACKETS);
 
@@ -65,7 +65,7 @@ export function computeNYCTakeHome({ baseSalary, commission, pre401k = 0, preHSA
   // NYC Local
   const nycLocalTax = computeBracketTax(nyTaxable, NYC_LOCAL_BRACKETS);
 
-  // FICA (based on gross, not reduced by 401k for SS/Medicare... actually 401k is pre-tax but NOT pre-FICA)
+  // FICA (based on gross — 401k does not reduce FICA wages)
   const ssWages = Math.min(grossIncome, SS_WAGE_CAP);
   const socialSecurity = ssWages * SS_RATE;
   const medicare = grossIncome * MEDICARE_RATE;
@@ -81,10 +81,21 @@ export function computeNYCTakeHome({ baseSalary, commission, pre401k = 0, preHSA
   const monthlyTakeHome = annualTakeHome / 12;
   const effectiveRate = grossIncome > 0 ? totalTax / grossIncome : 0;
 
+  // Commission withholding breakdown (what you actually see on paychecks)
+  const commissionTaxWithheld = commission * commissionWithholdingRate;
+  const commissionNetAnnual = commission - commissionTaxWithheld;
+  const commissionNetMonthly = commissionNetAnnual / 12;
+
+  // Base salary effective tax (total tax minus commission withholding, applied to base)
+  const baseTaxEstimate = totalTax - commissionTaxWithheld;
+  const baseNetAnnual = baseSalary - Math.max(baseTaxEstimate, 0) - totalPreTax;
+  const baseNetMonthly = baseNetAnnual / 12;
+
   return {
     grossIncome,
     baseSalary,
     commission,
+    commissionWithholdingRate,
     pre401k,
     preHSA,
     federalTaxable,
@@ -104,6 +115,13 @@ export function computeNYCTakeHome({ baseSalary, commission, pre401k = 0, preHSA
     effectiveRate,
     marginalFederal: getMarginalRate(federalTaxable, FEDERAL_BRACKETS),
     marginalState: getMarginalRate(nyTaxable, NY_STATE_BRACKETS),
+    // Commission-specific
+    commissionTaxWithheld,
+    commissionNetAnnual,
+    commissionNetMonthly,
+    commissionEffectiveRate: commissionWithholdingRate,
+    baseNetAnnual,
+    baseNetMonthly,
     breakdown: [
       { label: 'Federal Income Tax', amount: federalTax, pct: federalTax / grossIncome },
       { label: 'NY State Tax', amount: nyStateTax, pct: nyStateTax / grossIncome },
