@@ -1,7 +1,57 @@
 import { useLocalStorage } from './useLocalStorage';
 
+// Dany's Ramp RSU grants
+const SEED_GRANTS = [
+  {
+    id: 'ramp-jun-2025',
+    company: 'Ramp',
+    ticker: 'RAMP',
+    totalShares: 400,
+    vestedShares: 0,
+    grantPrice: 90,
+    currentPrice: 90,
+    grantDate: '2025-06-01',
+    vestingMonths: null,
+    cliffMonths: null,
+    vestingSchedule: [],
+    note: 'Initial grant — vesting not tracked here',
+  },
+  {
+    id: 'ramp-dec-2025',
+    company: 'Ramp',
+    ticker: 'RAMP',
+    totalShares: 438,
+    vestedShares: 72, // Jan + Feb 2026 already vested (36 × 2)
+    grantPrice: 90,
+    currentPrice: 90,
+    grantDate: '2025-12-01',
+    vestingMonths: 13,
+    cliffMonths: 0,
+    vestingSchedule: [
+      { date: '2026-01-01', shares: 36, vested: true },
+      { date: '2026-02-01', shares: 36, vested: true },
+      { date: '2026-03-01', shares: 36, vested: false },
+      { date: '2026-04-01', shares: 36, vested: false },
+      { date: '2026-05-01', shares: 36, vested: false },
+      { date: '2026-06-01', shares: 36, vested: false },
+      { date: '2026-07-01', shares: 36, vested: false },
+      { date: '2026-08-01', shares: 36, vested: false },
+      { date: '2026-09-01', shares: 36, vested: false },
+      { date: '2026-10-01', shares: 36, vested: false },
+      { date: '2026-11-01', shares: 36, vested: false },
+      { date: '2026-12-01', shares: 36, vested: false },
+      { date: '2027-01-01', shares: 6, vested: false },
+    ],
+  },
+];
+
 export function useRSUs() {
-  const [rsus, setRSUs] = useLocalStorage('wp_rsus', []);
+  const [rsus, setRSUs] = useLocalStorage('wp_rsus', SEED_GRANTS);
+
+  // Seed if localStorage has empty array from a previous session
+  if (Array.isArray(rsus) && rsus.length === 0) {
+    setRSUs(SEED_GRANTS);
+  }
 
   const addGrant = (grant) => {
     setRSUs((prev) => [...prev, { ...grant, id: crypto.randomUUID() }]);
