@@ -8,6 +8,7 @@ const PAGE_TITLES = {
   '/budget': 'Budget Tracker',
   '/portfolio': 'Portfolio Tracker',
   '/rsus': 'RSU Tracker',
+  '/settings': 'Settings',
 };
 
 export default function TopBar() {

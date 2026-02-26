@@ -7,6 +7,7 @@ import TaxCalcPage from './pages/TaxCalcPage';
 import BudgetPage from './pages/BudgetPage';
 import PortfolioPage from './pages/PortfolioPage';
 import RSUPage from './pages/RSUPage';
+import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="budget" element={<BudgetPage />} />
         <Route path="portfolio" element={<PortfolioPage />} />
         <Route path="rsus" element={<RSUPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );
