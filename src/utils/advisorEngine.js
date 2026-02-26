@@ -8,10 +8,13 @@ import {
 } from '../constants/advisorDefaults';
 
 export function computeAdvisory(profile) {
-  if (!profile || !profile.annualSalary) return null;
+  // Compute gross from base + commission, fall back to annualSalary
+  const computedGross = (profile?.baseSalary || 0) + ((profile?.monthlyCommission || 0) * 12);
+  const annualSalary = computedGross > 0 ? computedGross : (profile?.annualSalary || 0);
+  if (!profile || !annualSalary) return null;
 
   const risk = RISK_PROFILES[profile.riskTolerance] || RISK_PROFILES.aggressive;
-  const monthlyGross = profile.annualSalary / 12;
+  const monthlyGross = annualSalary / 12;
   const monthlyTakeHome = profile.takeHomePay
     ? profile.takeHomePay / 12
     : monthlyGross * 0.72;
@@ -31,7 +34,7 @@ export function computeAdvisory(profile) {
     budgetSplit.savings * 12,
     profile.employerMatch || 0,
     profile.employerMatchLimit || 0,
-    profile.annualSalary,
+    annualSalary,
     profile.hasHSA
   );
 

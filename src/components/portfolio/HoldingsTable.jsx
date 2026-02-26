@@ -30,10 +30,21 @@ export default function HoldingsTable({ holdings, onRemove, onEdit }) {
     </span>
   );
 
+  const ACCOUNT_LABELS = {
+    taxable: 'Taxable',
+    '401k': '401k',
+    roth_ira: 'Roth IRA',
+    traditional_ira: 'Trad IRA',
+    hsa: 'HSA',
+    crypto_exchange: 'Crypto',
+    other: 'Other',
+  };
+
   const columns = [
     { key: 'ticker', label: 'Ticker', align: 'left' },
     { key: 'name', label: 'Name', align: 'left' },
     { key: 'type', label: 'Type', align: 'left' },
+    { key: 'account', label: 'Account', align: 'left' },
     { key: 'shares', label: 'Shares', align: 'right' },
     { key: 'avgCost', label: 'Avg Cost', align: 'right' },
     { key: 'currentPrice', label: 'Price', align: 'right' },
@@ -77,6 +88,7 @@ export default function HoldingsTable({ holdings, onRemove, onEdit }) {
                   {h.type.toUpperCase()}
                 </span>
               </td>
+              <td className="py-3 px-4 text-sm text-gray-400">{ACCOUNT_LABELS[h.account] || h.account || 'Taxable'}</td>
               <td className="py-3 px-4 text-sm text-gray-200 text-right font-mono">{h.shares}</td>
               <td className="py-3 px-4 text-sm text-gray-300 text-right font-mono">{formatCurrency(h.avgCost, 2)}</td>
               <td className="py-3 px-4 text-sm text-gray-200 text-right font-mono">{formatCurrency(h.currentPrice, 2)}</td>

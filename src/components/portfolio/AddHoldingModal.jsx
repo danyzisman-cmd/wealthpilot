@@ -11,10 +11,21 @@ const HOLDING_TYPES = [
   { value: 'bond', label: 'Bond' },
 ];
 
+const ACCOUNT_TYPES = [
+  { value: 'taxable', label: 'Taxable Brokerage' },
+  { value: '401k', label: '401k' },
+  { value: 'roth_ira', label: 'Roth IRA' },
+  { value: 'traditional_ira', label: 'Traditional IRA' },
+  { value: 'hsa', label: 'HSA' },
+  { value: 'crypto_exchange', label: 'Crypto Exchange' },
+  { value: 'other', label: 'Other' },
+];
+
 const EMPTY = {
   ticker: '',
   name: '',
   type: 'etf',
+  account: 'taxable',
   shares: '',
   avgCost: '',
   currentPrice: '',
@@ -29,6 +40,7 @@ export default function AddHoldingModal({ isOpen, onClose, onSave, editingHoldin
         ticker: editingHolding.ticker,
         name: editingHolding.name,
         type: editingHolding.type,
+        account: editingHolding.account || 'taxable',
         shares: editingHolding.shares,
         avgCost: editingHolding.avgCost,
         currentPrice: editingHolding.currentPrice,
@@ -72,12 +84,20 @@ export default function AddHoldingModal({ isOpen, onClose, onSave, editingHoldin
             onChange={(e) => setForm({ ...form, type: e.target.value })}
           />
         </div>
-        <Input
-          label="Name"
-          placeholder="Vanguard Total Stock Market"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Name"
+            placeholder="Vanguard Total Stock Market"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <Select
+            label="Account"
+            options={ACCOUNT_TYPES}
+            value={form.account}
+            onChange={(e) => setForm({ ...form, account: e.target.value })}
+          />
+        </div>
         <div className="grid grid-cols-3 gap-4">
           <Input
             label="Shares"

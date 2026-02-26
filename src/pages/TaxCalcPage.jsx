@@ -17,6 +17,7 @@ export default function TaxCalcPage() {
   const [commissionTaxRate, setCommissionTaxRate] = useState(profile.commissionTaxRate || 40);
   const [contribution401k, setContribution401k] = useState(profile.contribution401kPct || 5);
   const [hsaContribution, setHsaContribution] = useState(profile.hsaAnnual || 0);
+  const [ficaExempt, setFicaExempt] = useState(profile.ficaExempt ?? true);
 
   const annualCommission = monthlyCommission * 12;
   const grossIncome = baseSalary + annualCommission;
@@ -30,8 +31,9 @@ export default function TaxCalcPage() {
       commissionWithholdingRate: commissionTaxRate / 100,
       pre401k: annual401k,
       preHSA: hsaContribution,
+      ficaExempt,
     }),
-    [baseSalary, annualCommission, commissionTaxRate, annual401k, hsaContribution]
+    [baseSalary, annualCommission, commissionTaxRate, annual401k, hsaContribution, ficaExempt]
   );
 
   const handleSaveToProfile = () => {
@@ -46,6 +48,7 @@ export default function TaxCalcPage() {
       hsaAnnual: hsaContribution,
       employerMatch: rampMatch.matchPercent,
       employerMatchLimit: 5,
+      ficaExempt,
     });
   };
 
@@ -107,11 +110,20 @@ export default function TaxCalcPage() {
             onChange={(e) => setHsaContribution(parseFloat(e.target.value) || 0)}
           />
         </div>
-        <div className="mt-4 flex items-center gap-4">
+        <div className="mt-4 flex items-center gap-4 flex-wrap">
           <div className="text-sm text-gray-400">
             Total Gross: <span className="font-semibold text-gray-100">{formatCurrency(grossIncome)}</span>
             <span className="text-gray-500 ml-2">({formatCurrency(baseSalary)} base + {formatCurrency(annualCommission)} commission)</span>
           </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={ficaExempt}
+              onChange={(e) => setFicaExempt(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-emerald-500 focus:ring-emerald-500/25"
+            />
+            <span className="text-sm text-gray-400">FICA Exempt (International/NRA)</span>
+          </label>
           <Button size="sm" onClick={handleSaveToProfile}>
             Save to Profile
           </Button>

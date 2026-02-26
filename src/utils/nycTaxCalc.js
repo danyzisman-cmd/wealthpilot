@@ -47,7 +47,7 @@ function computeBracketTax(taxableIncome, brackets) {
   return tax;
 }
 
-export function computeNYCTakeHome({ baseSalary, commission, commissionWithholdingRate = 0.40, pre401k = 0, preHSA = 0 }) {
+export function computeNYCTakeHome({ baseSalary, commission, commissionWithholdingRate = 0.40, pre401k = 0, preHSA = 0, ficaExempt = false }) {
   const grossIncome = baseSalary + commission;
   if (grossIncome <= 0) return null;
 
@@ -65,15 +65,20 @@ export function computeNYCTakeHome({ baseSalary, commission, commissionWithholdi
   // NYC Local
   const nycLocalTax = computeBracketTax(nyTaxable, NYC_LOCAL_BRACKETS);
 
-  // FICA (based on gross — 401k does not reduce FICA wages)
-  const ssWages = Math.min(grossIncome, SS_WAGE_CAP);
-  const socialSecurity = ssWages * SS_RATE;
-  const medicare = grossIncome * MEDICARE_RATE;
-  const medicareAdditional = grossIncome > MEDICARE_ADDITIONAL_THRESHOLD
-    ? (grossIncome - MEDICARE_ADDITIONAL_THRESHOLD) * MEDICARE_ADDITIONAL_RATE
-    : 0;
-  const totalMedicare = medicare + medicareAdditional;
-  const totalFICA = socialSecurity + totalMedicare;
+  // FICA — exempt for international workers (e.g. F-1/J-1 nonresident aliens)
+  let socialSecurity = 0;
+  let totalMedicare = 0;
+  let totalFICA = 0;
+  if (!ficaExempt) {
+    const ssWages = Math.min(grossIncome, SS_WAGE_CAP);
+    socialSecurity = ssWages * SS_RATE;
+    const medicare = grossIncome * MEDICARE_RATE;
+    const medicareAdditional = grossIncome > MEDICARE_ADDITIONAL_THRESHOLD
+      ? (grossIncome - MEDICARE_ADDITIONAL_THRESHOLD) * MEDICARE_ADDITIONAL_RATE
+      : 0;
+    totalMedicare = medicare + medicareAdditional;
+    totalFICA = socialSecurity + totalMedicare;
+  }
 
   const totalTax = federalTax + nyStateTax + nycLocalTax + totalFICA;
   const totalDeductions = totalTax + totalPreTax;

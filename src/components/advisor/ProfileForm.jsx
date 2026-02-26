@@ -4,6 +4,7 @@ import Select from '../shared/Select';
 import Button from '../shared/Button';
 import Card from '../shared/Card';
 import { DEBT_TYPES } from '../../constants/advisorDefaults';
+import { formatCurrency } from '../../utils/formatters';
 
 const RISK_OPTIONS = [
   { value: 'conservative', label: 'Conservative' },
@@ -44,13 +45,33 @@ export default function ProfileForm({ profile, onUpdate, onAddDebt, onRemoveDebt
           onChange={(e) => onUpdate({ age: parseInt(e.target.value) || 0 })}
         />
         <Input
-          label="Annual Salary (Gross)"
+          label="Base Salary (annual)"
           type="number"
           prefix="$"
-          placeholder="75000"
-          value={profile.annualSalary || ''}
-          onChange={(e) => onUpdate({ annualSalary: parseFloat(e.target.value) || 0 })}
+          placeholder="66500"
+          value={profile.baseSalary || ''}
+          onChange={(e) => {
+            const base = parseFloat(e.target.value) || 0;
+            const commission = (profile.monthlyCommission || 0) * 12;
+            onUpdate({ baseSalary: base, annualSalary: base + commission });
+          }}
         />
+        <Input
+          label="Avg Monthly Commission"
+          type="number"
+          prefix="$"
+          placeholder="8000"
+          value={profile.monthlyCommission || ''}
+          onChange={(e) => {
+            const monthly = parseFloat(e.target.value) || 0;
+            const base = profile.baseSalary || 0;
+            onUpdate({ monthlyCommission: monthly, commission: monthly * 12, annualSalary: base + monthly * 12 });
+          }}
+        />
+        <div className="md:col-span-2 bg-gray-850 rounded-lg p-3 flex items-center justify-between">
+          <span className="text-sm text-gray-400">Total Gross Income</span>
+          <span className="text-lg font-bold text-gray-100">{formatCurrency((profile.baseSalary || 0) + (profile.monthlyCommission || 0) * 12)}/yr</span>
+        </div>
         <Input
           label="Annual Take-Home Pay"
           type="number"
